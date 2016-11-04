@@ -72,9 +72,10 @@ def calculate_coordinates(particles, coordinates):
 				coordinates[i][1] = czynnik1*b0[1]+czynnik2*b1[1]+czynnik3*b2[1]
 				coordinates[i][2] = czynnik1*b0[2]+czynnik2*b1[2]+czynnik3*b2[2]
 
-				energy[i][0] = -1./2*k*T0*np.log(np.random.uniform(0.0,1.0))
-				energy[i][1] = -1./2*k*T0*np.log(np.random.uniform(0.0,1.0))
-				energy[i][2] = -1./2*k*T0*np.log(np.random.uniform(0.0,1.0))
+	energy = -1./2*k*T0*np.log(np.random.uniform(0.0,1.0, size = (N, 3)))
+	# energy[i][0] = -1./2*k*T0*np.log(np.random.uniform(0.0,1.0))
+	# energy[i][1] = -1./2*k*T0*np.log(np.random.uniform(0.0,1.0))
+	# energy[i][2] = -1./2*k*T0*np.log(np.random.uniform(0.0,1.0))
 
 	particles[:,0] = coordinates[:,0]
 	particles[:,1] = coordinates[:,1]
@@ -91,63 +92,73 @@ def calculate_coordinates(particles, coordinates):
 	energy[:,1] /=  E_av_x[1]
 	energy[:,2] /=  E_av_x[2]
 
+	return energy
 
-def calculate_momenta(particles, momenta):
+def calculate_momenta(particles, momenta,energy):
 	
-	for k in range(int(N)):
-		for x in range(n):
+	# for k in range(int(N)):
+	# 	for x in range(n):
 			
-			for y in range(n):
-				for z in range(n):
-					randomX = np.random.uniform(0.0,1.0)
-					if (randomX > 0.5):
-						signX = 1.0
-					else:
-						signX = -1.0
-					#print signX
-					randomY = np.random.uniform(0.0,1.0)
-					if (randomY > 0.5):
-						signY = 1.0
-					else:
-						signY = -1.0
-					#print signY
-					randomZ = np.random.uniform(0.0,1.0)
-					if (randomZ > 0.5):
-						signZ = 1.0
-					else:
-						signZ = -1.0
-					#print signZ
+	# 		for y in range(n):
+	# 			for z in range(n):
+	# 				randomX = np.random.uniform(0.0,1.0)
+	# 				if (randomX > 0.5):
+	# 					signX = 1.0
+	# 				else:
+	# 					signX = -1.0
+	# 				#print signX
+	# 				randomY = np.random.uniform(0.0,1.0)
+	# 				if (randomY > 0.5):
+	# 					signY = 1.0
+	# 				else:
+	# 					signY = -1.0
+	# 				#print signY
+	# 				randomZ = np.random.uniform(0.0,1.0)
+	# 				if (randomZ > 0.5):
+	# 					signZ = 1.0
+	# 				else:
+	# 					signZ = -1.0
+	# 				#print signZ
 
-					i = x+y*n+z*n*n
-				#	print int(i)
-					momenta[i][0] = signX*np.sqrt(2*m*energy[i][0])
-					momenta[i][1] = signY*np.sqrt(2*m*energy[i][1])
-					momenta[i][2] = signZ*np.sqrt(2*m*energy[i][2])
+	# 				i = x+y*n+z*n*n
+	# 				#	print i
+	# 				# import ipdb
+	# 			 	#    ipdb.set_trace()
+	# 				#print (energy[i][0])
+	# 				momenta[i][0] = signX*np.sqrt(2*m*energy[i][0])
+	# 				momenta[i][1] = signY*np.sqrt(2*m*energy[i][1])
+	# 				momenta[i][2] = signZ*np.sqrt(2*m*energy[i][2])
 
-	P1 = np.sum(momenta[i][0])
-	#print P1
-	P2 = np.sum(momenta[i][1])
-	#print P1
-	P3 = np.sum(momenta[i][2])
-	#print P1
+	momenta = np.random.choice((-1.0,1.0), size = (N, 3))*np.sqrt(2.*m*energy)
+
+	cm_momentum = momenta.sum(axis=0)
+	# P1 = np.sum(momenta[:,0]) # momenta[:,0].sum()
+	# #print P1
+	# P2 = np.sum(momenta[:,1])
+	# #print P1
+	# P3 = np.sum(momenta[:,2])
+	# #print P1
 
 	# for i in range(int(N)):
 	# 	momenta[i][0] = momenta[i][0] - P1/N
 	# 	momenta[i][1] = momenta[i][1] - P2/N
 	# 	momenta[i][2] = momenta[i][2] - P3/N
 
-	momenta[:,0] -= P1/N
-	momenta[:,1] -= P2/N
-	momenta[:,2] -= P3/N
+	# momenta[:,0] -= P1/N
+	# momenta[:,1] -= P2/N
+	# momenta[:,2] -= P3/N
+
+	momenta -= cm_momentum/N
+
+	# import ipdb
+	# ipdb.set_trace()
 
 
+	particles[:,3:] = momenta
+	return momenta
 
 
-	particles[:,3] = momenta[:,0]
-	particles[:,4] = momenta[:,1]
-	particles[:,5] = momenta[:,2]
-
-def calculate_potential(F,p, total_potential):
+def calculate_potential():
 	# distancesX = np.zeros((N,N))
 	# distancesY = np.zeros((N,N))
 	# distancesZ = np.zeros((N,N))
@@ -162,48 +173,76 @@ def calculate_potential(F,p, total_potential):
 	Fs = np.zeros(N)
 	F = np.zeros((N,3))
 
+	# OPTYMALIZACJA
+	# ToDo: popatrzec na czas z mnozeniem!
 
+	# robie macierz na odleglosci miedzy czastami
+	rij = coordinates.reshape((N,1,3)) - coordinates.reshape((1,N,3)) # 1(np broadcasting)  - liczba dla kazdej z par, 3 - x,y,z
+	rij_scalar = np.sqrt((rij**2).sum(axis=2))
+	indices = np.arange(int(N))
+	rij_scalar[indices,indices] = np.inf
+	potential_VDW = e*((R/rij_scalar)**12-2*(R/rij_scalar)**6) # gdybym miala nawias [],mialaby liste
+	total_VDW_potential = potential_VDW.sum() / 2.
+	F_VDW = 12*potential_VDW.reshape((N,N,1))*(rij/rij_scalar.reshape((N,N,1))**2)
+	F_VDW = F_VDW.sum(axis = 1) # sprawdzic
+
+	wall_potential = np.zeros(N, dtype=float)
+	ri = np.sqrt((coordinates**2).sum(axis=1))
+	warunek = ri > L 
+	wall_potential[warunek] = 0.5*f*(L-ri[warunek])**2
+	total_wall_potential = wall_potential.sum()
+	F_wall = np.zeros((N,3), dtype=float)
+
+	# import ipdb
+	# ipdb.set_trace()
+	F_wall[warunek] =f*(L-ri[warunek, np.newaxis])*coordinates[warunek]/ri[warunek, np.newaxis] 
+
+	total_potential = total_VDW_potential+total_wall_potential
+	F = F_wall+F_VDW
+
+	p = 1./(4.*pi*L**2)*np.sqrt((F**2).sum(axis=1))
+	return F, p, total_potential
 	# dla pary atomow
-	for i in range(int(N)):
-		ri = np.sqrt(coordinates[i][0]*coordinates[i][0]+coordinates[i][1]*coordinates[i][1]+coordinates[i][2]*coordinates[i][2])
-		if (ri<L):
-			total_potential += 0
-			F[i][0] += 0
-			F[i][1] += 0
-			F[i][2] += 0
-		else:
-			"wchodze do petli "
-			total_potential += 0.5 *f*(ri-L)*(ri-L)
-			F[i][0] += f*(L-ri)/ri*coordinates[i][0]
-			F[i][1] += f*(L-ri)/ri*coordinates[i][1]
-			F[i][2] += f*(L-ri)/ri*coordinates[i][2]
+	# for i in range(int(N)):
+	# 	ri = np.sqrt(coordinates[i][0]*coordinates[i][0]+coordinates[i][1]*coordinates[i][1]+coordinates[i][2]*coordinates[i][2])
+	# 	if (ri<L):
+	# 		total_potential += 0
+	# 		F[i][0] += 0
+	# 		F[i][1] += 0
+	# 		F[i][2] += 0
+	# 	else:
+	# 		"wchodze do petli "
+	# 		total_potential += 0.5 *f*(ri-L)*(ri-L)
+	# 		F[i][0] += f*(L-ri)/ri*coordinates[i][0]
+	# 		F[i][1] += f*(L-ri)/ri*coordinates[i][1]
+	# 		F[i][2] += f*(L-ri)/ri*coordinates[i][2]
 
-			F_length =  np.sqrt(F[i][0]*F[i][0]+F[i][1]*F[i][1]+F[i][2]*F[i][2])
-			p += 1./(4*pi*L**2)*F_length
+	# 		F_length =  np.sqrt(F[i][0]*F[i][0]+F[i][1]*F[i][1]+F[i][2]*F[i][2])
+	# 		p += 1./(4*pi*L**2)*F_length
 
-		for j in range(i-1):
-		#	if(i!=j):
-			# distancesX[i][j] = abs(coordinates[i][0]-coordinates[j][0])
-			# distancesY[i][j] = abs(coordinates[i][1]-coordinates[j][1])
-			# distancesZ[i][j] = abs(coordinates[i][2]-coordinates[j][2])
-			# distances[i][j] = np.sqrt(distancesX[i][j]*distancesX[i][j]+distancesY[i][j]*distancesY[i][j]+distancesZ[i][j]*distancesZ[i][j])
-			distances[i][j] = np.sqrt(abs(coordinates[i][0]-coordinates[j][0])*abs(coordinates[i][0]-coordinates[j][0])+abs(coordinates[i][1]-coordinates[j][1])*abs(coordinates[i][1]-coordinates[j][1])+abs(coordinates[i][2]-coordinates[j][2])*abs(coordinates[i][2]-coordinates[j][2]))
+	# 	for j in range(i-1):
+	# 	#	if(i!=j):
+	# 		# distancesX[i][j] = abs(coordinates[i][0]-coordinates[j][0])
+	# 		# distancesY[i][j] = abs(coordinates[i][1]-coordinates[j][1])
+	# 		# distancesZ[i][j] = abs(coordinates[i][2]-coordinates[j][2])
+	# 		# distances[i][j] = np.sqrt(distancesX[i][j]*distancesX[i][j]+distancesY[i][j]*distancesY[i][j]+distancesZ[i][j]*distancesZ[i][j])
+	# 		distances[i][j] = np.sqrt(abs(coordinates[i][0]-coordinates[j][0])*abs(coordinates[i][0]-coordinates[j][0])+abs(coordinates[i][1]-coordinates[j][1])*abs(coordinates[i][1]-coordinates[j][1])+abs(coordinates[i][2]-coordinates[j][2])*abs(coordinates[i][2]-coordinates[j][2]))
 
-				#potentialP = e*((R/(distances[i][j]))**12 - 2*(R/(distances[i][j]))**6)
-			total_potential += e*((R/(distances[i][j]))**12 - 2*(R/(distances[i][j]))**6)
-			F[i][0] += 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][0]-coordinates[j][0])/(distances[i][j])**2
-			F[i][1] += 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][1]-coordinates[j][1])/(distances[i][j])**2
-			F[i][2] += 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][2]-coordinates[j][2])/(distances[i][j])**2
-			F[j][0] -= 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][0]-coordinates[j][0])/(distances[i][j])**2
-			F[j][1] -= 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][1]-coordinates[j][1])/(distances[i][j])**2
-			F[j][2] -= 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][2]-coordinates[j][2])/(distances[i][j])**2
+	# 			#potentialP = e*((R/(distances[i][j]))**12 - 2*(R/(distances[i][j]))**6)
+	# 		total_potential += e*((R/(distances[i][j]))**12 - 2*(R/(distances[i][j]))**6)
+	# 		F[i][0] += 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][0]-coordinates[j][0])/(distances[i][j])**2
+	# 		F[i][1] += 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][1]-coordinates[j][1])/(distances[i][j])**2
+	# 		F[i][2] += 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][2]-coordinates[j][2])/(distances[i][j])**2
+	# 		F[j][0] -= 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][0]-coordinates[j][0])/(distances[i][j])**2
+	# 		F[j][1] -= 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][1]-coordinates[j][1])/(distances[i][j])**2
+	# 		F[j][2] -= 12*e*((R/(distances[i][j]))**12 - (R/(distances[i][j]))**6)*(coordinates[i][2]-coordinates[j][2])/(distances[i][j])**2
 
-	print "force = ", F
-	print "pressure = ", p
-	print "total V = ",total_potential
+	# print "force = ", F
+	# print "pressure = ", p
+	# print "total V = ",total_potential
 
 
-def dynamics():
+def dynamics(F, momenta, coordinates):
 	T_av = 0.0
 	P_av = 0.0
 	H_av = 0.0
@@ -215,41 +254,44 @@ def dynamics():
 
 		# momenta += F*tau
 		# coordinates += 1./(m*momenta*tau)
+		# import ipdb
+		# ipdb.set_trace()
 
+		momenta += 0.5*F*tau
+		coordinates += momenta*tau/float(m)
 
+		# for i in range(int(N)):
 
-
-		for i in range(int(N)):
-
-		# inter - intermediate state
+		# # inter - intermediate state
 			
-			momenta[i][0] += (+0.5*F[i][0]*tau)
-			momenta[i][1] += (+0.5*F[i][1]*tau)
-			momenta[i][2] += (+0.5*F[i][2]*tau)
+		# 	momenta[i][0] += (+0.5*F[i][0]*tau)
+		# 	momenta[i][1] += (+0.5*F[i][1]*tau)
+		# 	momenta[i][2] += (+0.5*F[i][2]*tau)
 
-			# coordinated modification
+		# 	# coordinated modification
 			
 
-			coordinates[i][0] += ( 1/m*momenta[i][0]*tau)
-			coordinates[i][1] += (1/m*momenta[i][1]*tau)
-			coordinates[i][2] +=  (1/m*momenta[i][2]*tau)
+		# 	coordinates[i][0] += ( 1/m*momenta[i][0]*tau)
+		# 	coordinates[i][1] += (1/m*momenta[i][1]*tau)
+		# 	coordinates[i][2] +=  (1/m*momenta[i][2]*tau)
 
 
 			# obliczenie nowego potencjalu, sil oraz chwilowego cisnienia
-		calculate_potential(F, p, total_potential)
+		F, p, total_potential = calculate_potential()
 
 	#	momenta += 0.5*F
+		momenta += 0.5*F*tau
 
-		for i in range(int(N)):
-			# modyfikacja pedow, tutaj juz bedzie nowa wyliczona sila z calculate_potential
-			momenta[i][0] += ( 0.5*F[i][0]*tau)
-			momenta[i][1] += ( 0.5*F[i][1]*tau)
-			momenta[i][2] += ( 0.5*F[i][2]*tau)
+		# for i in range(int(N)):
+		# 	# modyfikacja pedow, tutaj juz bedzie nowa wyliczona sila z calculate_potential
+		# 	momenta[i][0] += ( 0.5*F[i][0]*tau)
+		# 	momenta[i][1] += ( 0.5*F[i][1]*tau)
+		# 	momenta[i][2] += ( 0.5*F[i][2]*tau)
 
-
+		energy_current = (momenta**2).sum(axis = 1)/(2.0*m)
 
 		# chwilowe charakterystyki dla wszystkich czastek
-		energy_current = np.sum((coordinates[i][0]*coordinates[i][0]+coordinates[i][1]*coordinates[i][1]+coordinates[i][2]*coordinates[i][2])/(2*m))
+		#energy_current = np.sum((coordinates[i][0]*coordinates[i][0]+coordinates[i][1]*coordinates[i][1]+coordinates[i][2]*coordinates[i][2])/(2*m))
 		T = 2./(3*k*int(N))* energy_current
 		H = energy_current + total_potential
 		#energy_particle = 
@@ -269,7 +311,8 @@ def dynamics():
 			# t - czas
 			t = s + tau
 			f_handle = file(outFile, 'a')
-			current_parameters = np.array([t,H,total_potential,T,p])
+			current_parameters = np.zeros(5)
+			current_parameters = ([t,H,total_potential,T,p])
 			np.savetxt(f_handle, current_parameters.reshape((1,5)),delimiter='\t', fmt='%1.4e')
 			f_handle.close()
 
@@ -313,23 +356,17 @@ if __name__ == "__main__":
 	total_potential = 0.0
 
 
-	calculate_coordinates(particles, coordinates)
-	calculate_momenta(particles, momenta)
-
+	energy = calculate_coordinates(particles, coordinates)
+	# import ipdb
+	# ipdb.set_trace()	
+	momenta = calculate_momenta(particles, momenta, energy)
+	# import ipdb
+	# ipdb.set_trace()
 	#plot_3D(momenta)
 
 	np.savetxt(coordinatesFile, particles[:,[0,1,2]]) # all rows, only 3,4,5 columns
 	#np.savetxt(outFile,particles)
 
 	# potential and force calculation
-	calculate_potential(F,p,total_potential)
-	dynamics()
-
-
-
-
-				
-
-
-
-
+	F, p, total_potential = calculate_potential()
+	dynamics(F,momenta,coordinates)
