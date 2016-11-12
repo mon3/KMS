@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 
-def read_parameters(parametersFile):
+def read_parameters(parametersFile,tau_value, a_value):
 	global k,n,m,e,R,f,L,a,T0,tau,So,Sd,Sout,Sxyz,N,b0,b1,b2
 
 	with open(parametersFile) as f:
@@ -25,6 +25,7 @@ def read_parameters(parametersFile):
 	f = lines[4]
 	L = lines[5]
 	a = lines[6]
+	# a = a_value
 	T0 = lines[7]
 	tau = lines[8]
 	So = int(lines[9])
@@ -34,6 +35,8 @@ def read_parameters(parametersFile):
 
 
 	N = pow(n,3)
+
+	print "N= ", N
 	b0 = [a,0,0]
 	b1 = [a/2.,a/2.*sqrt(3.),0]
 	b2 = [a/2., a/6.*sqrt(3.), a*sqrt(2./3)]
@@ -57,8 +60,11 @@ def calculate_coordinates(particles, coordinates):
 	
 	particles[:,:3] = coordinates
 	# renormalizacja
-	E_av_x = np.mean(energy,axis=0)/(0.5*k*T0)
-	energy /=  E_av_x
+	if( T0>0):
+		E_av_x = np.mean(energy,axis=0)/(0.5*k*T0)
+		energy /=  E_av_x
+	else:
+		energy = 0
 	#energy *=(0.5*k*T0)
 
 	return energy
@@ -103,7 +109,7 @@ def calculate_potential(coordinates, R, e, N,):
 	total_potential = total_VDW_potential+total_wall_potential
 	F = F_wall+F_VDW
 
-	p = np.sqrt((F_wall**2).sum())/(4.*pi*L**2)
+	p = np.sqrt((F_wall**2).sum())/(4.*pi*L*L)
 	return F, p, total_potential
 
 def dynamics(F, momenta, coordinates):
@@ -112,7 +118,7 @@ def dynamics(F, momenta, coordinates):
 	H_av = 0.0
 	# So - kroki przeznaczone na wstepna termalizacje
 
-	avs_file = file('avs.dat', 'w')
+	avs_file = file('avs_T1000_So500_Sd2500_a0-373_v3.dat', 'w')
 	f_handle = file(outFile, 'w')
 
 	energy_particle = np.zeros(N)
@@ -129,29 +135,25 @@ def dynamics(F, momenta, coordinates):
 
 		energy_current = (momenta**2).sum(axis = 1)/(2.0*m)
 
-		# ZAŁOŻENIE: H oraz energia ma być skalarem, bo na tę chwilę jest wektorem
-		# i p w sumie też
 
 		energy_current_sum = energy_current.sum()
 		# chwilowe charakterystyki dla wszystkich czastek
-		T = 2./(3.0*k*int(N))* energy_current_sum
+		T = 2./(3.0*k*float(N))* energy_current_sum
 
 
 
 		H = energy_current_sum + total_potential
-		#energy_particle =
 
-		print ("temperatura ", T)
-		print ("energia", H)
 
-		if (s >=So):
+
+		if (s >= So):
 			T_av += T
 			H_av += H
 			P_av += p
 
 
 		if (s % Sout==0):
-			t = s + tau
+			t = s * tau
 			current_parameters = np.array([t,H,total_potential,T,p])
 			np.savetxt(f_handle, current_parameters.reshape((1,5)),delimiter='\t', fmt='%1.4e')
 
@@ -161,12 +163,23 @@ def dynamics(F, momenta, coordinates):
 			avs_file.write('\n')
 			avs_file.write('\n')
 
-	T_av /= Sd
-	H_av /= Sd
-	P_av /= Sd
+	T_av /= float(Sd)
+	H_av /= float(Sd)
+	P_av /= float(Sd)
+
+	# print  H_av, tau
+
+	f_handle.close()
+	# f_handle = file(outFile, 'r')
 
 	print "average T, H, P", T_av, H_av, P_av
-	f_handle.close()
+	# Dane = np.loadtxt(f_handle)
+	# potential_read = Dane[:,2]
+    
+	# print "min V = ", min(potential_read)
+	# print "V0 = ", potential_read[0]
+
+	# print a, potential_read[0], min(potential_read)
 	avs_file.close()
 
 def plot_3D(data):
@@ -183,7 +196,20 @@ if __name__ == "__main__":
 	outFile = sys.argv[2]
 	coordinatesFile = sys.argv[3]
 
-	read_parameters(parametersFile)
+	a = np.arange(1e-6,1e-5, 1e-6)
+	b = np.arange(1e-5,1e-4, 1e-5)
+	c = np.arange(1e-3,1e-2, 1e-3)
+	d = np.arange(1e-2,1e-1, 1e-2)
+	g=np.concatenate((a,b,c,d),axis=0)
+
+
+
+	tau_array = np.arange(1e-6,1e-1,1e-6)
+	# for tau_params in tau_array:
+	a_array = np.arange(0.37,0.39,0.0005)
+
+	# for a_value in a_array:
+	read_parameters(parametersFile, tau_array, a_array)
 
 	particles = np.zeros((int(N),6))
 	coordinates = np.zeros((int(N),3))

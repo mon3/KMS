@@ -8,29 +8,23 @@ import matplotlib
 from scipy.optimize import curve_fit
 from scipy.stats import chisquare
 
-def linear(x,a,b):
-    return a*x + b
-
-def func(x, a, b,c):
-    return a * x*x+b*x+c
-
-def sqrt_func(x, a, b,c):
-    return a * np.power(x,b)+c
-
 def main():
     matplotlib.rcParams['text.usetex'] = True
     matplotlib.rcParams['text.latex.unicode'] = True
-    Dane = np.loadtxt("out.txt")
-    H = Dane[:,1]
-    tau = np.empty(len(H))
-    tau.fill(2e-3)
+    Dane = np.loadtxt("test1.txt")
+    H = Dane[:,0]
+    t = Dane[:,1]
 
+    
+    plt.title(r"Zależność $\overline{H}(\tau)$", fontsize=20)
+    plt.xlabel(r"$\tau ~[ps]$", fontsize=18)
+    plt.ylabel(r"$\overline{H} ~ \frac{kJ}{mol}$", fontsize=18)
    
-    # plt.title(r"Kalibracja energetyczna detektora d8", fontsize=20)
-    # plt.xlabel(r"kanał", fontsize=18)
-    # plt.ylabel("U [mV]", fontsize=18)
-   
-    plt.plot(H, tau,'o', label='dane eksperymentalne')
+    plt.semilogy(t,H,'o', label='symulacja')
+ 
+
+
+
  
     plt.grid()
     plt.legend(loc=4)
